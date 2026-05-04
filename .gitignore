@@ -1,0 +1,17 @@
+# OAuth 憑證與授權 token（絕對不能上傳）
+credentials/
+
+# 環境變數
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
