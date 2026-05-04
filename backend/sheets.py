@@ -1,4 +1,5 @@
 import os
+import json
 import gspread
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -48,27 +49,59 @@ def _token_path() -> str:
         os.path.join(_creds_dir(), "token.json")
     )
 
+# ── 記憶體快取（Railway 重啟後重讀環境變數即可）──────────────
+_creds_cache: dict = {}   # key: "creds", value: Credentials
+
+# ── 環境變數 token（Railway 部署用）──────────────────────────
+
+def _get_token_from_env() -> Credentials | None:
+    """從 GOOGLE_TOKEN_JSON 環境變數讀取 Credentials，失敗回傳 None。"""
+    raw = os.getenv("GOOGLE_TOKEN_JSON", "").strip()
+    if not raw:
+        return None
+    try:
+        info = json.loads(raw)
+        return Credentials.from_authorized_user_info(info, SCOPES)
+    except Exception:
+        return None
+
 # ── OAuth 核心 ───────────────────────────────────────────
 
 def is_authenticated() -> bool:
-    """快速檢查：token.json 存在且有效（或可刷新）。"""
-    tp = _token_path()
-    if not os.path.exists(tp):
-        return False
-    try:
-        creds = Credentials.from_authorized_user_file(tp, SCOPES)
-        if creds.valid:
-            return True
-        if creds.expired and creds.refresh_token:
+    """快速檢查：token 有效（或可刷新）。優先讀環境變數，其次讀檔案。"""
+    # 1. 先看記憶體快取
+    creds = _creds_cache.get("creds")
+    if creds and creds.valid:
+        return True
+
+    # 2. 環境變數（Railway）
+    creds = _get_token_from_env()
+    if creds is None:
+        # 3. 本地檔案
+        tp = _token_path()
+        if not os.path.exists(tp):
+            return False
+        try:
+            creds = Credentials.from_authorized_user_file(tp, SCOPES)
+        except Exception:
+            return False
+
+    if creds.valid:
+        _creds_cache["creds"] = creds
+        return True
+    if creds.expired and creds.refresh_token:
+        try:
             creds.refresh(Request())
-            _save_token(creds)
+            _try_save_token(creds)
+            _creds_cache["creds"] = creds
             return True
-    except Exception:
-        pass
+        except Exception:
+            pass
     return False
 
 def run_auth_flow() -> None:
-    """執行 OAuth 授權（首次或 token 失效時）。開啟瀏覽器，完成後存 token.json。"""
+    """執行 OAuth 授權（本地開發用）。開啟瀏覽器，完成後存 token.json。
+    Railway 雲端不支援此流程，請改用 GOOGLE_TOKEN_JSON 環境變數。"""
     client_secret = _find_client_secret()
     if not os.path.exists(client_secret):
         raise FileNotFoundError(
@@ -77,24 +110,39 @@ def run_auth_flow() -> None:
         )
     flow  = InstalledAppFlow.from_client_secrets_file(client_secret, SCOPES)
     creds = flow.run_local_server(port=0)
-    _save_token(creds)
+    _try_save_token(creds)
+    _creds_cache["creds"] = creds
 
-def _save_token(creds: Credentials) -> None:
-    tp = _token_path()
-    os.makedirs(os.path.dirname(tp), exist_ok=True)
-    with open(tp, "w", encoding="utf-8") as f:
-        f.write(creds.to_json())
+def _try_save_token(creds: Credentials) -> None:
+    """儲存 token.json；雲端環境寫入失敗時靜默略過。"""
+    try:
+        tp = _token_path()
+        os.makedirs(os.path.dirname(tp), exist_ok=True)
+        with open(tp, "w", encoding="utf-8") as f:
+            f.write(creds.to_json())
+    except Exception:
+        pass   # Railway 唯讀檔案系統，靜默略過
 
 def _get_creds() -> Credentials:
-    """取得有效的 Credentials，必要時自動刷新。"""
-    tp = _token_path()
-    if not os.path.exists(tp):
-        raise RuntimeError("尚未完成 Google 授權，請先呼叫 /auth/start")
+    """取得有效的 Credentials，必要時自動刷新。優先環境變數，其次檔案。"""
+    # 記憶體快取
+    creds = _creds_cache.get("creds")
+    if creds and creds.valid:
+        return creds
 
-    creds = Credentials.from_authorized_user_file(tp, SCOPES)
+    # 環境變數
+    creds = _get_token_from_env()
+    if creds is None:
+        tp = _token_path()
+        if not os.path.exists(tp):
+            raise RuntimeError("尚未完成 Google 授權，請先呼叫 /auth/start")
+        creds = Credentials.from_authorized_user_file(tp, SCOPES)
+
     if not creds.valid and creds.expired and creds.refresh_token:
         creds.refresh(Request())
-        _save_token(creds)
+        _try_save_token(creds)
+
+    _creds_cache["creds"] = creds
     return creds
 
 def _get_client() -> gspread.Client:

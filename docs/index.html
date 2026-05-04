@@ -504,6 +504,14 @@
       </button>
       <div class="sheets-body" x-show="sheetsOpen">
 
+        <!-- 後端網址 -->
+        <div class="field" style="margin-bottom:10px;">
+          <label style="font-size:.7rem;font-weight:700;color:var(--gray600);">後端網址（Railway）</label>
+          <input class="sid-input" x-model="backendUrl" @input="save()"
+            placeholder="https://your-app.railway.app" />
+          <p class="sid-hint" style="margin-top:4px;">留空時使用相對路徑（本地開發）</p>
+        </div>
+
         <!-- 授權狀態列 -->
         <div class="auth-row">
           <span class="auth-status" :class="isAuthenticated?'ok':'no'">
@@ -715,6 +723,7 @@ function app() {
     otherQ:  '', otherCatFilter:  '',
 
     spreadsheetId: '', sheetsOpen: false,
+    backendUrl: '',
     isAuthenticated: false, authLoading: false, creating: false,
     syncingLumber: false, syncingOther: false,
     toasts: [],
@@ -729,6 +738,7 @@ function app() {
           this.lumber        = d.lumber        || [];
           this.other         = d.other         || [];
           this.spreadsheetId = d.spreadsheetId || '';
+          this.backendUrl    = d.backendUrl    || '';
         } catch(_) {}
       } else {
         (INIT_DATA['板材角材'] || []).forEach(r => {
@@ -752,7 +762,7 @@ function app() {
 
     async checkAuthStatus() {
       try {
-        const res  = await fetch('/auth/status');
+        const res  = await fetch(this.backendUrl + '/auth/status');
         const data = await res.json();
         this.isAuthenticated = data.authenticated;
       } catch(_) { this.isAuthenticated = false; }
@@ -762,7 +772,7 @@ function app() {
       this.authLoading = true;
       this.sheetsOpen  = true;
       try {
-        const res  = await fetch('/auth/start', { method: 'POST' });
+        const res  = await fetch(this.backendUrl + '/auth/start', { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail);
         this.isAuthenticated = true;
@@ -777,7 +787,7 @@ function app() {
     async createSpreadsheet() {
       this.creating = true;
       try {
-        const res  = await fetch('/sheets/create', { method: 'POST' });
+        const res  = await fetch(this.backendUrl + '/sheets/create', { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail);
         this.spreadsheetId = data.spreadsheet_id;
@@ -914,7 +924,8 @@ function app() {
 
     save() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        lumber: this.lumber, other: this.other, spreadsheetId: this.spreadsheetId,
+        lumber: this.lumber, other: this.other,
+        spreadsheetId: this.spreadsheetId, backendUrl: this.backendUrl,
       }));
     },
 
@@ -946,7 +957,7 @@ function app() {
         ? { items: this.lumber.map(r => ({...r, spec_label: this.specSummary(r)})) }
         : { items: this.other };
       try {
-        const res  = await fetch(`/sync/${type}?spreadsheet_id=${encodeURIComponent(this.spreadsheetId)}`, {
+        const res  = await fetch(this.backendUrl + `/sync/${type}?spreadsheet_id=${encodeURIComponent(this.spreadsheetId)}`, {
           method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
         });
         const data = await res.json();
