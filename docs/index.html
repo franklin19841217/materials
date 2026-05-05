@@ -789,6 +789,29 @@ function app() {
         });
         this.save();
       }
+      // 角材規格格式遷移（舊格式 → 新格式 "12尺 × 1.8吋"）
+      const KAKUZAI_MAP = {
+        '12尺1.8吋1寸':'12尺 × 1.8吋', '12尺1.2吋1寸':'12尺 × 1.2吋',
+        '9尺1.8吋1寸': '9尺 × 1.8吋',  '9尺1.2吋1寸': '9尺 × 1.2吋',
+        '8尺1.8吋1寸': '8尺 × 1.8吋',  '8尺1.2吋1寸': '8尺 × 1.2吋',
+        '12尺×1.8吋':  '12尺 × 1.8吋', '12尺×1.2吋':  '12尺 × 1.2吋',
+        '9尺×1.8吋':   '9尺 × 1.8吋',  '9尺×1.2吋':   '9尺 × 1.2吋',
+        '8尺×1.8吋':   '8尺 × 1.8吋',  '8尺×1.2吋':   '8尺 × 1.2吋',
+      };
+      let migrated = false;
+      this.lumber = this.lumber.map(r => {
+        if (r.category !== '角材' || r.is_custom) return r;
+        if (r.raw_spec && KAKUZAI_MAP[r.raw_spec])
+          return { ...r, spec: KAKUZAI_MAP[r.raw_spec], raw_spec: null, migrated: true };
+        if (!r.raw_spec && r.spec && KAKUZAI_MAP[r.spec])
+          return { ...r, spec: KAKUZAI_MAP[r.spec], migrated: true };
+        return r;
+      });
+      if (this.lumber.some(r => r.migrated)) {
+        this.lumber = this.lumber.map(r => { const {migrated,...rest}=r; return rest; });
+        this.save();
+      }
+
       // 檢查後端授權狀態
       this.checkAuthStatus();
     },
