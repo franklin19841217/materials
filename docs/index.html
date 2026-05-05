@@ -340,8 +340,9 @@
               </template>
             </div>
           </div>
-          <div class="f2">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0 10px;">
             <div class="field"><label>廠商</label><input x-model="forms['波麗板'].supplier" @keydown.enter="addItem('波麗板')" /></div>
+            <div class="field"><label>色號</label><input x-model="forms['波麗板'].colorCode" @keydown.enter="addItem('波麗板')" placeholder="如 W001" /></div>
             <div class="field"><label>單價（元）</label><input type="number" min="0" x-model.number="forms['波麗板'].price" @keydown.enter="addItem('波麗板')" /></div>
           </div>
           <button class="btn btn-add" @click="addItem('波麗板')" :disabled="!canAdd('波麗板')">＋ 新增波麗板</button>
@@ -378,8 +379,9 @@
               </template>
             </div>
           </div>
-          <div class="f2">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0 10px;">
             <div class="field"><label>廠商</label><input x-model="forms['美耐皿板'].supplier" @keydown.enter="addItem('美耐皿板')" /></div>
+            <div class="field"><label>色號</label><input x-model="forms['美耐皿板'].colorCode" @keydown.enter="addItem('美耐皿板')" placeholder="如 W001" /></div>
             <div class="field"><label>單價（元）</label><input type="number" min="0" x-model.number="forms['美耐皿板'].price" @keydown.enter="addItem('美耐皿板')" /></div>
           </div>
           <button class="btn btn-add" @click="addItem('美耐皿板')" :disabled="!canAdd('美耐皿板')">＋ 新增美耐皿板</button>
@@ -587,7 +589,7 @@
         <template x-if="lumberFiltered.length>0">
           <table>
             <thead>
-              <tr><th>分類</th><th>規格</th><th>廠商</th><th class="r">單價</th><th></th></tr>
+              <tr><th>分類</th><th>規格</th><th>廠商</th><th>色號</th><th class="r">單價</th><th></th></tr>
             </thead>
             <tbody>
               <template x-for="row in lumberFiltered" :key="row.id">
@@ -595,6 +597,7 @@
                   <td class="cat-td"><span class="cat-tag" x-text="row.category"></span></td>
                   <td class="spec-td" x-text="specSummary(row)"></td>
                   <td><input class="ci" x-model="row.supplier" @change="save()" /></td>
+                  <td><input class="ci" x-model="row.colorCode" @change="save()" placeholder="—" style="max-width:80px;" /></td>
                   <td><input class="ci r" type="number" x-model.number="row.unit_price" @change="save()" /></td>
                   <td class="del-td"><button class="del-btn" @click="deleteLumber(row.id)">✕</button></td>
                 </tr>
@@ -714,8 +717,8 @@ function initForms() {
   return {
     '夾板':    { open:true,  size:'', thickness:'', isCustom:false, customSpec:'', supplier:'', price:'' },
     '木心板':  { open:false, size:'', thickness:'', supplier:'', price:'' },
-    '波麗板':  { open:false, thickness:'', face:'', supplier:'', price:'' },
-    '美耐皿板':{ open:false, thickness:'', face:'', supplier:'', price:'' },
+    '波麗板':  { open:false, thickness:'', face:'', colorCode:'', supplier:'', price:'' },
+    '美耐皿板':{ open:false, thickness:'', face:'', colorCode:'', supplier:'', price:'' },
     '防火板':  { open:false, size:'', thickness:'', supplier:'', price:'' },
     '塑膠壁板':{ open:false, kind:'', spec:'', supplier:'', price:'' },
     '角材':    { open:false, spec:'', isCustom:false, customSpec:'', supplier:'', price:'' },
@@ -865,7 +868,8 @@ function app() {
           item.size = f.size; item.thickness = f.thickness; break;
         case '波麗板':
         case '美耐皿板':
-          item.size = '4×8'; item.thickness = f.thickness; item.face = f.face; break;
+          item.size = '4×8'; item.thickness = f.thickness; item.face = f.face;
+          item.colorCode = f.colorCode.trim(); break;
         case '防火板':
           item.size = f.size; item.thickness = f.thickness; break;
         case '塑膠壁板':
