@@ -171,6 +171,26 @@ def _ensure_worksheet(sh: gspread.Spreadsheet, title: str, headers: list) -> gsp
         ws.append_row(headers, value_input_option="USER_ENTERED")
     return ws
 
+def load_lumber(spreadsheet_id: str) -> list:
+    """從試算表讀取板材角材，回傳 list of dict。"""
+    sh = _get_client().open_by_key(spreadsheet_id)
+    try:
+        ws = sh.worksheet(LUMBER_SHEET)
+    except gspread.WorksheetNotFound:
+        return []
+    return ws.get_all_records()
+
+
+def load_other(spreadsheet_id: str) -> list:
+    """從試算表讀取其他材料，回傳 list of dict。"""
+    sh = _get_client().open_by_key(spreadsheet_id)
+    try:
+        ws = sh.worksheet(OTHER_SHEET)
+    except gspread.WorksheetNotFound:
+        return []
+    return ws.get_all_records()
+
+
 def overwrite_lumber(items: List[LumberItem], spreadsheet_id: str) -> int:
     sh = _get_client().open_by_key(spreadsheet_id)
     ws = _ensure_worksheet(sh, LUMBER_SHEET, LUMBER_HEADERS)

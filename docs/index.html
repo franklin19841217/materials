@@ -545,6 +545,17 @@
           點「＋ 新建表」自動建立，或貼上現有試算表 ID
         </p>
 
+        <!-- 從 Sheets 載入 -->
+        <div style="margin-top:10px;border-top:1px solid var(--gray100);padding-top:10px;">
+          <button class="btn btn-import" style="width:100%;justify-content:center;"
+            @click="loadFromSheets"
+            :disabled="!isAuthenticated || !spreadsheetId || loadingFromSheets">
+            <span x-show="!loadingFromSheets">⬇ 從 Sheets 同步到本裝置</span>
+            <span x-show="loadingFromSheets">讀取中…</span>
+          </button>
+          <p class="sid-hint" style="margin-top:5px;">覆蓋本機資料，適合在新裝置上同步最新資料</p>
+        </div>
+
       </div>
     </div>
 
@@ -725,7 +736,7 @@ function app() {
     spreadsheetId: '', sheetsOpen: false,
     backendUrl: '',
     isAuthenticated: false, authLoading: false, creating: false,
-    syncingLumber: false, syncingOther: false,
+    syncingLumber: false, syncingOther: false, loadingFromSheets: false,
     toasts: [],
     LUMBER_CATS,
 
@@ -967,6 +978,51 @@ function app() {
         this.toast('寫入失敗：' + e.message, 'err');
       } finally {
         if (isL) this.syncingLumber = false; else this.syncingOther = false;
+      }
+    },
+
+    async loadFromSheets() {
+      if (!this.spreadsheetId) { this.sheetsOpen = true; this.toast('請先填入 Spreadsheet ID', 'err'); return; }
+      this.loadingFromSheets = true;
+      try {
+        const sid = encodeURIComponent(this.spreadsheetId);
+        const [lRes, oRes] = await Promise.all([
+          fetch(this.backendUrl + `/load/lumber?spreadsheet_id=${sid}`),
+          fetch(this.backendUrl + `/load/other?spreadsheet_id=${sid}`),
+        ]);
+        if (!lRes.ok) throw new Error((await lRes.json()).detail || '讀取板材失敗');
+        if (!oRes.ok) throw new Error((await oRes.json()).detail || '讀取其他材料失敗');
+        const lData = await lRes.json();
+        const oData = await oRes.json();
+
+        // 轉換板材角材（欄位：分類、規格、廠商、單位、單價）
+        this.lumber = (lData.rows || []).map(r => ({
+          id: uid(),
+          category:   String(r['分類']  || ''),
+          raw_spec:   String(r['規格']  || ''),
+          supplier:   String(r['廠商']  || ''),
+          unit:       String(r['單位']  || '片'),
+          unit_price: r['單價'] !== '' ? Number(r['單價']) : '',
+          size: null, thickness: null, face: null, kind: null,
+          spec: String(r['規格'] || ''), is_custom: false,
+        }));
+
+        // 轉換其他材料（欄位：類別、品名、規格、單位、單價）
+        this.other = (oData.rows || []).map(r => ({
+          id: uid(),
+          category:   String(r['類別']  || ''),
+          name:       String(r['品名']  || ''),
+          spec:       String(r['規格']  || ''),
+          unit:       String(r['單位']  || ''),
+          unit_price: r['單價'] !== '' ? Number(r['單價']) : '',
+        }));
+
+        this.save();
+        this.toast(`已載入板材 ${this.lumber.length} 筆、其他材料 ${this.other.length} 筆`, 'ok');
+      } catch(e) {
+        this.toast('載入失敗：' + e.message, 'err');
+      } finally {
+        this.loadingFromSheets = false;
       }
     },
 

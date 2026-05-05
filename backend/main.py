@@ -93,3 +93,25 @@ def sync_other(req: SyncOtherRequest, spreadsheet_id: str):
         return {"success": True, "written": count, "sheet": sheets.OTHER_SHEET}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── 從試算表讀取 ──────────────────────────────────────────
+
+@app.get("/load/lumber")
+def load_lumber(spreadsheet_id: str):
+    _require_auth_and_id(spreadsheet_id)
+    try:
+        rows = sheets.load_lumber(spreadsheet_id)
+        return {"success": True, "rows": rows}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/load/other")
+def load_other(spreadsheet_id: str):
+    _require_auth_and_id(spreadsheet_id)
+    try:
+        rows = sheets.load_other(spreadsheet_id)
+        return {"success": True, "rows": rows}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
