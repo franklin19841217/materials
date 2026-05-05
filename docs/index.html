@@ -295,7 +295,12 @@
           </div>
           <div class="sg">
             <div class="sg-label">厚度</div>
-            <span class="fixed-tag">5.5分（固定）</span>
+            <div class="sg-btns">
+              <template x-for="t in ['5.5分','2分','1分']" :key="t">
+                <button class="sb" :class="{on:forms['木心板'].thickness===t}"
+                  @click="forms['木心板'].thickness=t" x-text="t"></button>
+              </template>
+            </div>
           </div>
           <div class="f2">
             <div class="field"><label>廠商</label><input x-model="forms['木心板'].supplier" @keydown.enter="addItem('木心板')" /></div>
@@ -714,7 +719,7 @@ function blankOther() { return { category:'', name:'', spec:'', unit:'', unit_pr
 function initForms() {
   return {
     '夾板':    { open:true,  size:'', thickness:'', isCustom:false, customSpec:'', supplier:'', price:'' },
-    '木心板':  { open:false, size:'', supplier:'', price:'' },
+    '木心板':  { open:false, size:'', thickness:'', supplier:'', price:'' },
     '波麗板':  { open:false, thickness:'', face:'', supplier:'', price:'' },
     '美耐皿板':{ open:false, thickness:'', face:'', supplier:'', price:'' },
     '防火板':  { open:false, size:'', thickness:'', supplier:'', price:'' },
@@ -822,7 +827,7 @@ function app() {
       const f = this.forms[cat];
       switch(cat) {
         case '夾板':     return f.isCustom ? !!f.customSpec.trim() : (!!f.size && !!f.thickness);
-        case '木心板':   return !!f.size;
+        case '木心板':   return !!f.size && !!f.thickness;
         case '波麗板':
         case '美耐皿板': return !!f.thickness && (f.thickness !== '6分' || !!f.face);
         case '防火板':   return !!f.size && !!f.thickness;
@@ -838,7 +843,7 @@ function app() {
       const { category: c, size, thickness, face, kind, spec, is_custom } = row;
       switch(c) {
         case '夾板':     return is_custom ? `特規 ${spec}` : `${size} ${thickness}`;
-        case '木心板':   return `${size} 5.5分`;
+        case '木心板':   return `${size} ${thickness}`;
         case '波麗板':
         case '美耐皿板': return `4×8 ${thickness} ${face || ''}`.trim();
         case '防火板':   return `${size} ${thickness}`;
@@ -864,7 +869,7 @@ function app() {
           else { item.size = f.size; item.thickness = f.thickness; }
           break;
         case '木心板':
-          item.size = f.size; item.thickness = '5.5分'; break;
+          item.size = f.size; item.thickness = f.thickness; break;
         case '波麗板':
         case '美耐皿板':
           item.size = '4×8'; item.thickness = f.thickness;
