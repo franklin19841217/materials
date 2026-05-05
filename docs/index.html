@@ -345,8 +345,8 @@
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0 10px;">
-            <div class="field"><label>廠商</label><input x-model="forms['波麗板'].supplier" @keydown.enter="addItem('波麗板')" /></div>
             <div class="field"><label>色號</label><input x-model="forms['波麗板'].colorCode" @keydown.enter="addItem('波麗板')" placeholder="如 W001" /></div>
+            <div class="field"><label>廠商</label><input x-model="forms['波麗板'].supplier" @keydown.enter="addItem('波麗板')" /></div>
             <div class="field"><label>單價（元）</label><input type="number" min="0" x-model.number="forms['波麗板'].price" @keydown.enter="addItem('波麗板')" /></div>
           </div>
           <button class="btn btn-add" @click="addItem('波麗板')" :disabled="!canAdd('波麗板')">＋ 新增波麗板</button>
@@ -384,8 +384,8 @@
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0 10px;">
-            <div class="field"><label>廠商</label><input x-model="forms['美耐皿板'].supplier" @keydown.enter="addItem('美耐皿板')" /></div>
             <div class="field"><label>色號</label><input x-model="forms['美耐皿板'].colorCode" @keydown.enter="addItem('美耐皿板')" placeholder="如 W001" /></div>
+            <div class="field"><label>廠商</label><input x-model="forms['美耐皿板'].supplier" @keydown.enter="addItem('美耐皿板')" /></div>
             <div class="field"><label>單價（元）</label><input type="number" min="0" x-model.number="forms['美耐皿板'].price" @keydown.enter="addItem('美耐皿板')" /></div>
           </div>
           <button class="btn btn-add" @click="addItem('美耐皿板')" :disabled="!canAdd('美耐皿板')">＋ 新增美耐皿板</button>
@@ -596,8 +596,8 @@
               <tr>
                 <th class="sortable" :class="{active:lumberSortKey==='category'}" @click="sortBy('lumber','category')">分類<span class="arr" x-text="sortArrow('lumber','category')"></span></th>
                 <th class="sortable" :class="{active:lumberSortKey==='spec'}"     @click="sortBy('lumber','spec')">規格<span class="arr" x-text="sortArrow('lumber','spec')"></span></th>
-                <th class="sortable" :class="{active:lumberSortKey==='supplier'}" @click="sortBy('lumber','supplier')">廠商<span class="arr" x-text="sortArrow('lumber','supplier')"></span></th>
                 <th class="sortable" :class="{active:lumberSortKey==='colorCode'}" @click="sortBy('lumber','colorCode')">色號<span class="arr" x-text="sortArrow('lumber','colorCode')"></span></th>
+                <th class="sortable" :class="{active:lumberSortKey==='supplier'}" @click="sortBy('lumber','supplier')">廠商<span class="arr" x-text="sortArrow('lumber','supplier')"></span></th>
                 <th class="sortable r" :class="{active:lumberSortKey==='unit_price'}" @click="sortBy('lumber','unit_price')">單價<span class="arr" x-text="sortArrow('lumber','unit_price')"></span></th>
                 <th></th>
               </tr>
@@ -607,8 +607,8 @@
                 <tr>
                   <td class="cat-td"><span class="cat-tag" x-text="row.category"></span></td>
                   <td class="spec-td" x-text="specSummary(row)"></td>
-                  <td><input class="ci" x-model="row.supplier" @change="save()" /></td>
                   <td><input class="ci" x-model="row.colorCode" @change="save()" placeholder="—" style="max-width:80px;" /></td>
+                  <td><input class="ci" x-model="row.supplier" @change="save()" /></td>
                   <td><input class="ci r" type="number" x-model.number="row.unit_price" @change="save()" /></td>
                   <td class="del-td"><button class="del-btn" @click="deleteLumber(row.id)">✕</button></td>
                 </tr>
@@ -1052,7 +1052,12 @@ function app() {
           method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || '伺服器錯誤');
+        if (!res.ok) {
+          const detail = data.detail;
+          throw new Error(Array.isArray(detail)
+            ? detail.map(e => e.msg || JSON.stringify(e)).join('；')
+            : (detail || '伺服器錯誤'));
+        }
         this.toast(`已寫入「${data.sheet}」${data.written} 筆`, 'ok');
       } catch(e) {
         this.toast('寫入失敗：' + e.message, 'err');
