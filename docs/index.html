@@ -143,6 +143,10 @@
       border-bottom:1.5px solid var(--gray200);
     }
     th.r { text-align:right; }
+    th.sortable { cursor:pointer; user-select:none; white-space:nowrap; }
+    th.sortable:hover { background:var(--gray100); color:var(--gray800); }
+    th.sortable .arr { font-size:.65rem; opacity:.5; margin-left:2px; }
+    th.sortable.active .arr { opacity:1; color:var(--blue); }
     td { padding:0; border-bottom:1px solid var(--gray100); vertical-align:middle; }
     tr:last-child td { border-bottom:none; }
     tr:hover td { background:var(--gray50); }
@@ -245,7 +249,7 @@
           <div class="sg">
             <div class="sg-label">尺寸</div>
             <div class="sg-btns">
-              <template x-for="s in ['4×8','3×7','3×6']" :key="s">
+              <template x-for="s in ['4×8尺','3×7尺','3×6尺']" :key="s">
                 <button class="sb" :class="{on:forms['夾板'].size===s&&!forms['夾板'].isCustom}"
                   @click="forms['夾板'].isCustom=false;forms['夾板'].size=s" x-text="s"></button>
               </template>
@@ -287,7 +291,7 @@
           <div class="sg">
             <div class="sg-label">尺寸</div>
             <div class="sg-btns">
-              <template x-for="s in ['4×8','4×7','3×7','3×6']" :key="s">
+              <template x-for="s in ['4×8尺','4×7尺','3×7尺','3×6尺']" :key="s">
                 <button class="sb" :class="{on:forms['木心板'].size===s}"
                   @click="forms['木心板'].size=s" x-text="s"></button>
               </template>
@@ -399,7 +403,7 @@
           <div class="sg">
             <div class="sg-label">尺寸</div>
             <div class="sg-btns">
-              <template x-for="s in ['4×8','4×7','3×6']" :key="s">
+              <template x-for="s in ['4×8尺','4×7尺','3×6尺']" :key="s">
                 <button class="sb" :class="{on:forms['防火板'].size===s}"
                   @click="forms['防火板'].size=s" x-text="s"></button>
               </template>
@@ -467,7 +471,7 @@
           <div class="sg">
             <div class="sg-label">規格</div>
             <div class="sg-btns">
-              <template x-for="s in ['12尺×1.8吋','12尺×1.2吋','9尺×1.8吋','9尺×1.2吋','8尺×1.8吋','8尺×1.2吋']" :key="s">
+              <template x-for="s in ['12尺 × 1.8吋','12尺 × 1.2吋','9尺 × 1.8吋','9尺 × 1.2吋','8尺 × 1.8吋','8尺 × 1.2吋']" :key="s">
                 <button class="sb" :class="{on:forms['角材'].spec===s&&!forms['角材'].isCustom}"
                   @click="forms['角材'].isCustom=false;forms['角材'].spec=s" x-text="s"></button>
               </template>
@@ -589,7 +593,14 @@
         <template x-if="lumberFiltered.length>0">
           <table>
             <thead>
-              <tr><th>分類</th><th>規格</th><th>廠商</th><th>色號</th><th class="r">單價</th><th></th></tr>
+              <tr>
+                <th class="sortable" :class="{active:lumberSortKey==='category'}" @click="sortBy('lumber','category')">分類<span class="arr" x-text="sortArrow('lumber','category')"></span></th>
+                <th class="sortable" :class="{active:lumberSortKey==='spec'}"     @click="sortBy('lumber','spec')">規格<span class="arr" x-text="sortArrow('lumber','spec')"></span></th>
+                <th class="sortable" :class="{active:lumberSortKey==='supplier'}" @click="sortBy('lumber','supplier')">廠商<span class="arr" x-text="sortArrow('lumber','supplier')"></span></th>
+                <th class="sortable" :class="{active:lumberSortKey==='colorCode'}" @click="sortBy('lumber','colorCode')">色號<span class="arr" x-text="sortArrow('lumber','colorCode')"></span></th>
+                <th class="sortable r" :class="{active:lumberSortKey==='unit_price'}" @click="sortBy('lumber','unit_price')">單價<span class="arr" x-text="sortArrow('lumber','unit_price')"></span></th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               <template x-for="row in lumberFiltered" :key="row.id">
@@ -670,7 +681,14 @@
         <template x-if="otherFiltered.length>0">
           <table>
             <thead>
-              <tr><th>類別</th><th>品名</th><th>規格</th><th>單位</th><th class="r">單價</th><th></th></tr>
+              <tr>
+                <th class="sortable" :class="{active:otherSortKey==='category'}" @click="sortBy('other','category')">類別<span class="arr" x-text="sortArrow('other','category')"></span></th>
+                <th class="sortable" :class="{active:otherSortKey==='name'}"     @click="sortBy('other','name')">品名<span class="arr" x-text="sortArrow('other','name')"></span></th>
+                <th class="sortable" :class="{active:otherSortKey==='spec'}"     @click="sortBy('other','spec')">規格<span class="arr" x-text="sortArrow('other','spec')"></span></th>
+                <th>單位</th>
+                <th class="sortable r" :class="{active:otherSortKey==='unit_price'}" @click="sortBy('other','unit_price')">單價<span class="arr" x-text="sortArrow('other','unit_price')"></span></th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               <template x-for="row in otherFiltered" :key="row.id">
@@ -733,7 +751,9 @@ function app() {
     of: blankOther(),
 
     lumberQ: '', lumberCatFilter: '',
+    lumberSortKey: '', lumberSortDir: 1,
     otherQ:  '', otherCatFilter:  '',
+    otherSortKey: '', otherSortDir: 1,
 
     spreadsheetId: '', sheetsOpen: false,
     backendUrl: '',
@@ -838,11 +858,11 @@ function app() {
       if (row.raw_spec) return row.raw_spec;
       const { category: c, size, thickness, face, kind, spec, is_custom } = row;
       switch(c) {
-        case '夾板':     return is_custom ? `特規 ${spec}` : `${size} ${thickness}`;
-        case '木心板':   return `${size} ${thickness}`;
+        case '夾板':     return is_custom ? `特規 ${spec}` : `${size}　${thickness}`;
+        case '木心板':   return `${size}　${thickness}`;
         case '波麗板':
-        case '美耐皿板': return `4×8 ${thickness} ${face || ''}`.trim();
-        case '防火板':   return `${size} ${thickness}`;
+        case '美耐皿板': return `4×8尺　${thickness} ${face || ''}`.trim();
+        case '防火板':   return `${size}　${thickness}`;
         case '塑膠壁板': return `${kind}${spec ? ' ' + spec : ''}`;
         case '角材':     return is_custom ? `特規 ${spec}` : `${spec} × 1寸`;
         default: return spec || '';
@@ -868,7 +888,7 @@ function app() {
           item.size = f.size; item.thickness = f.thickness; break;
         case '波麗板':
         case '美耐皿板':
-          item.size = '4×8'; item.thickness = f.thickness; item.face = f.face;
+          item.size = '4×8尺'; item.thickness = f.thickness; item.face = f.face;
           item.colorCode = f.colorCode.trim(); break;
         case '防火板':
           item.size = f.size; item.thickness = f.thickness; break;
@@ -910,21 +930,57 @@ function app() {
     deleteLumber(id) { this.lumber = this.lumber.filter(r => r.id !== id); this.save(); },
     deleteOther(id)  { this.other  = this.other.filter(r => r.id !== id);  this.save(); },
 
+    sortBy(type, key) {
+      if (type === 'lumber') {
+        if (this.lumberSortKey === key) this.lumberSortDir *= -1;
+        else { this.lumberSortKey = key; this.lumberSortDir = 1; }
+      } else {
+        if (this.otherSortKey === key) this.otherSortDir *= -1;
+        else { this.otherSortKey = key; this.otherSortDir = 1; }
+      }
+    },
+    sortArrow(type, key) {
+      const k = type === 'lumber' ? this.lumberSortKey : this.otherSortKey;
+      const d = type === 'lumber' ? this.lumberSortDir : this.otherSortDir;
+      if (k !== key) return '⇅';
+      return d > 0 ? '↑' : '↓';
+    },
+
     get lumberFiltered() {
       const q = this.lumberQ.toLowerCase(), cat = this.lumberCatFilter;
-      return this.lumber.filter(r => {
+      let result = this.lumber.filter(r => {
         if (cat && r.category !== cat) return false;
         if (!q) return true;
-        return (r.category + this.specSummary(r) + (r.supplier||'')).toLowerCase().includes(q);
+        return (r.category + this.specSummary(r) + (r.supplier||'') + (r.colorCode||'')).toLowerCase().includes(q);
       });
+      if (this.lumberSortKey) {
+        const k = this.lumberSortKey, d = this.lumberSortDir;
+        result = [...result].sort((a, b) => {
+          let av = k === 'spec' ? this.specSummary(a) : (k === 'unit_price' ? (a[k] ?? 0) : (a[k] ?? ''));
+          let bv = k === 'spec' ? this.specSummary(b) : (k === 'unit_price' ? (b[k] ?? 0) : (b[k] ?? ''));
+          if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * d;
+          return String(av).localeCompare(String(bv), 'zh-TW') * d;
+        });
+      }
+      return result;
     },
     get otherFiltered() {
       const q = this.otherQ.toLowerCase(), cat = this.otherCatFilter;
-      return this.other.filter(r => {
+      let result = this.other.filter(r => {
         if (cat && r.category !== cat) return false;
         if (!q) return true;
         return (r.category + r.name + r.spec + r.unit).toLowerCase().includes(q);
       });
+      if (this.otherSortKey) {
+        const k = this.otherSortKey, d = this.otherSortDir;
+        result = [...result].sort((a, b) => {
+          let av = k === 'unit_price' ? (a[k] ?? 0) : (a[k] ?? '');
+          let bv = k === 'unit_price' ? (b[k] ?? 0) : (b[k] ?? '');
+          if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * d;
+          return String(av).localeCompare(String(bv), 'zh-TW') * d;
+        });
+      }
+      return result;
     },
     get otherCategories() {
       return [...new Set(this.other.map(r => r.category).filter(Boolean))].sort();
