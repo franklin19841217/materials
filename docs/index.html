@@ -331,17 +331,14 @@
               </template>
             </div>
           </div>
-          <div class="sg" x-show="forms['波麗板'].thickness==='6分'">
-            <div class="sg-label">面別</div>
+          <div class="sg">
+            <div class="sg-label">面材</div>
             <div class="sg-btns">
               <template x-for="f in ['單面','雙面']" :key="f">
                 <button class="sb" :class="{on:forms['波麗板'].face===f}"
                   @click="forms['波麗板'].face=f" x-text="f"></button>
               </template>
             </div>
-          </div>
-          <div x-show="forms['波麗板'].thickness&&forms['波麗板'].thickness!=='6分'" class="sg">
-            <span class="fixed-tag">單面（固定）</span>
           </div>
           <div class="f2">
             <div class="field"><label>廠商</label><input x-model="forms['波麗板'].supplier" @keydown.enter="addItem('波麗板')" /></div>
@@ -372,17 +369,14 @@
               </template>
             </div>
           </div>
-          <div class="sg" x-show="forms['美耐皿板'].thickness==='6分'">
-            <div class="sg-label">面別</div>
+          <div class="sg">
+            <div class="sg-label">面材</div>
             <div class="sg-btns">
               <template x-for="f in ['單面','雙面']" :key="f">
                 <button class="sb" :class="{on:forms['美耐皿板'].face===f}"
                   @click="forms['美耐皿板'].face=f" x-text="f"></button>
               </template>
             </div>
-          </div>
-          <div x-show="forms['美耐皿板'].thickness&&forms['美耐皿板'].thickness!=='6分'" class="sg">
-            <span class="fixed-tag">單面（固定）</span>
           </div>
           <div class="f2">
             <div class="field"><label>廠商</label><input x-model="forms['美耐皿板'].supplier" @keydown.enter="addItem('美耐皿板')" /></div>
@@ -819,7 +813,6 @@ function app() {
     // 波麗板/美耐皿板：選厚度時決定是否顯示面別
     setPoliThickness(cat, t) {
       this.forms[cat].thickness = t;
-      this.forms[cat].face = t !== '6分' ? '單面' : '';
     },
 
     // 各分類新增驗證
@@ -829,7 +822,7 @@ function app() {
         case '夾板':     return f.isCustom ? !!f.customSpec.trim() : (!!f.size && !!f.thickness);
         case '木心板':   return !!f.size && !!f.thickness;
         case '波麗板':
-        case '美耐皿板': return !!f.thickness && (f.thickness !== '6分' || !!f.face);
+        case '美耐皿板': return !!f.thickness && !!f.face;
         case '防火板':   return !!f.size && !!f.thickness;
         case '塑膠壁板': return !!f.kind;
         case '角材':     return f.isCustom ? !!f.customSpec.trim() : !!f.spec;
@@ -872,8 +865,7 @@ function app() {
           item.size = f.size; item.thickness = f.thickness; break;
         case '波麗板':
         case '美耐皿板':
-          item.size = '4×8'; item.thickness = f.thickness;
-          item.face = f.thickness === '6分' ? f.face : '單面'; break;
+          item.size = '4×8'; item.thickness = f.thickness; item.face = f.face; break;
         case '防火板':
           item.size = f.size; item.thickness = f.thickness; break;
         case '塑膠壁板':
